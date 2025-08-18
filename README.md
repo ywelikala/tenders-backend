@@ -24,6 +24,37 @@ Backend API for the Tender Portal application built with Node.js, Express, and M
 - **Logging**: Winston
 - **Security**: Helmet, Rate Limiting, Input Validation
 
+## ☁️ Cloud Deployment
+
+### Google Cloud Platform (Recommended)
+
+Deploy to Google Cloud Run with automatic scaling and managed infrastructure:
+
+```bash
+# Quick deployment using our script
+./gcp/deploy.sh
+
+# Or use GitHub Actions for automated CI/CD
+# See GCP_DEPLOYMENT_GUIDE.md for detailed instructions
+```
+
+**Features:**
+- ✅ Auto-scaling (scale to zero when idle)
+- ✅ Managed HTTPS with global CDN
+- ✅ Pay-per-use pricing (~$1-5/month for low traffic)
+- ✅ Integrated monitoring and logging
+- ✅ Zero-downtime deployments
+
+📖 **[Complete GCP Deployment Guide](GCP_DEPLOYMENT_GUIDE.md)**
+
+### Other Cloud Platforms
+
+The Docker images work on any container platform:
+- **AWS**: ECS, Fargate, Elastic Beanstalk
+- **Azure**: Container Instances, App Service
+- **DigitalOcean**: App Platform
+- **Heroku**: Container Registry
+
 ## 🐳 Docker
 
 ### Build Docker Image
