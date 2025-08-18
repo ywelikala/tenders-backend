@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Coverage and test files
+coverage/
+.nyc_output/
+tests/
+*.test.js
+test-results/
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files  
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Migration and debug scripts (temporary)
+migrate-to-atlas.js
+simple-migration.js
+working-migration.js
+verify-migration.js
+test-atlas-connection.js
+debug-connection.js
+ATLAS_SETUP_GUIDE.md
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# CI/CD
+.github/
+
+# Uploads (will be created at runtime)
+uploads/*
+!uploads/.gitkeep
+!uploads/profiles/.gitkeep  
+!uploads/tenders/.gitkeep
