@@ -38,8 +38,11 @@ app.use(helmet());
 app.use(cors({
   credentials: true,
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
-    : ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:8080']
+    ? ['https://lankatender.com'] 
+    : ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:8080'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type'],
+  maxAge: 86400
 }));
 
 // Logging middleware (before all other middleware)
