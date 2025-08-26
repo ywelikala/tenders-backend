@@ -4,33 +4,67 @@ import User from '../models/User.js';
 import logger from '../utils/logger.js';
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN
-  });
+  try {
+    logger.debug('JWT generation details', {
+      userId: id,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    });
+    
+    const token = jwt.sign({ id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    });
+    
+    logger.debug('JWT token generated successfully', { 
+      userId: id,
+      tokenLength: token ? token.length : 0 
+    });
+    
+    return token;
+  } catch (error) {
+    logger.error('JWT token generation failed', error, { userId: id });
+    throw error;
+  }
 };
 
 const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
-  const token = generateToken(user._id);
-  
-  const cookieOptions = {
-    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
-  };
+  try {
+    logger.debug('Generating JWT token', { userId: user._id });
+    const token = generateToken(user._id);
+    
+    const cookieOptions = {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production'
+    };
 
-  // Remove password from output
-  user.password = undefined;
-
-  res.status(statusCode)
-    .cookie('token', token, cookieOptions)
-    .json({
-      success: true,
+    // Remove password from output
+    user.password = undefined;
+    
+    logger.debug('Sending token response', { 
+      userId: user._id, 
+      statusCode, 
       message,
-      token,
-      data: {
-        user
-      }
+      hasToken: !!token,
+      cookieOptions 
     });
+
+    res.status(statusCode)
+      .cookie('token', token, cookieOptions)
+      .json({
+        success: true,
+        message,
+        token,
+        data: {
+          user
+        }
+      });
+      
+    logger.debug('Token response sent successfully', { userId: user._id });
+  } catch (error) {
+    logger.error('Error in sendTokenResponse', error, { userId: user._id });
+    throw error;
+  }
 };
 
 // @desc    Register user
@@ -149,14 +183,29 @@ export const login = async (req, res) => {
     }
 
     // Update last login
+    logger.debug('Updating user last login', { userId: user._id });
     user.lastLogin = new Date();
     await user.save({ validateBeforeSave: false });
+    logger.debug('User last login updated successfully', { userId: user._id });
 
     const duration = Date.now() - startTime;
     logger.auth('Login successful', user._id, email, ip, true);
     logger.performance('User login', duration, { userId: user._id, email });
 
-    sendTokenResponse(user, 200, res, 'Login successful');
+    try {
+      sendTokenResponse(user, 200, res, 'Login successful');
+      logger.debug('Login completed successfully', { userId: user._id, email });
+    } catch (tokenError) {
+      logger.error('Failed to send token response after successful login', tokenError, {
+        userId: user._id,
+        email,
+        ip
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Authentication successful but failed to generate session'
+      });
+    }
   } catch (error) {
     logger.auth('Login failed - Server error', null, email, ip, false, error);
     res.status(500).json({

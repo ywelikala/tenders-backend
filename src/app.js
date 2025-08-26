@@ -24,6 +24,24 @@ logger.info('Starting Tender Portal Backend Server', {
   port: process.env.PORT || 3000,
 });
 
+// Check critical environment variables
+const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  logger.error('Missing required environment variables', {
+    missing: missingEnvVars,
+    environment: process.env.NODE_ENV
+  });
+  process.exit(1);
+}
+
+logger.debug('Environment variables check', {
+  hasJwtSecret: !!process.env.JWT_SECRET,
+  hasMongoUri: !!process.env.MONGODB_URI,
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d'
+});
+
 // Connect to database
 if (process.env.NODE_ENV !== 'test') {
   connectDB();
