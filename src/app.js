@@ -53,14 +53,63 @@ const app = express();
 app.use(helmet());
 
 // CORS configuration
+const getCorsOrigins = () => {
+  // Allow override via environment variable
+  if (process.env.CORS_ORIGINS) {
+    const origins = process.env.CORS_ORIGINS.split(',').map(origin => origin.trim());
+    logger.info('Using CORS origins from environment variable', { origins });
+    return origins;
+  }
+  
+  if (process.env.NODE_ENV === 'production') {
+    const origins = [
+      'https://lankatender.com',
+      'https://www.lankatender.com',
+      // Add any additional production domains here
+    ];
+    logger.info('Using production CORS origins', { origins });
+    return origins;
+  }
+  
+  const origins = [
+    'http://localhost:3000',
+    'http://localhost:8080', 
+    'http://127.0.0.1:8080',
+    // Add any additional development domains here
+  ];
+  logger.info('Using development CORS origins', { origins });
+  return origins;
+};
+
 app.use(cors({
   credentials: true,
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://lankatender.com'] 
-    : ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:8080'],
+  origin: (origin, callback) => {
+    const allowedOrigins = getCorsOrigins();
+    
+    // Log CORS request for debugging
+    logger.debug('CORS request received', {
+      requestOrigin: origin,
+      allowedOrigins: allowedOrigins,
+      isAllowed: !origin || allowedOrigins.includes(origin)
+    });
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      logger.warn('CORS origin rejected', {
+        requestOrigin: origin,
+        allowedOrigins: allowedOrigins
+      });
+      return callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'), false);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Authorization', 'Content-Type'],
-  maxAge: 86400
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-Requested-With'],
+  maxAge: 86400,
+  optionsSuccessStatus: 200 // Support legacy browsers
 }));
 
 // Logging middleware (before all other middleware)
@@ -116,6 +165,17 @@ app.get('/api/health', (req, res) => {
   
   logger.info('Health check completed', { healthCheck });
   res.status(200).json(healthCheck);
+});
+
+// Handle preflight requests for subscription routes specifically
+app.options('/api/subscriptions/*', (req, res) => {
+  logger.debug('Preflight request for subscription route', {
+    method: req.method,
+    url: req.originalUrl,
+    origin: req.headers.origin,
+    headers: req.headers
+  });
+  res.sendStatus(200);
 });
 
 // API routes
