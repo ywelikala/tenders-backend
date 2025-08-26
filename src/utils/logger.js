@@ -1,9 +1,4 @@
 import winston from 'winston';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Define log levels
 const levels = {
@@ -14,112 +9,42 @@ const levels = {
   debug: 4,
 };
 
-// Define level colors
-const colors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  http: 'magenta',
-  debug: 'white',
-};
+// Define custom JSON format for Cloud Run
+const cloudRunFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+    // Output JSON that Cloud Logging can parse
+    return JSON.stringify({
+      severity: level.toUpperCase(), // Cloud Logging expects this field
+      message,
+      timestamp,
+      ...meta,
+    });
+  })
+);
 
-// Add colors to winston
-winston.addColors(colors);
-
-// Define custom format
-const format = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  winston.format.colorize({ all: true }),
-  winston.format.printf((info) => {
-    const { timestamp, level, message, ...meta } = info;
-    
-    // Format meta information
-    let metaStr = '';
-    if (Object.keys(meta).length > 0) {
-      metaStr = '\n' + JSON.stringify(meta, null, 2);
-    }
-    
+// Define colorful format for local development
+const devFormat = winston.format.combine(
+  winston.format.colorize(),
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+    let metaStr = Object.keys(meta).length ? `\n${JSON.stringify(meta, null, 2)}` : '';
     return `${timestamp} [${level}]: ${message}${metaStr}`;
   })
 );
 
-// Define file format (without colors)
-const fileFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  winston.format.errors({ stack: true }),
-  winston.format.printf((info) => {
-    const { timestamp, level, message, stack, ...meta } = info;
-    
-    let metaStr = '';
-    if (Object.keys(meta).length > 0) {
-      metaStr = '\n' + JSON.stringify(meta, null, 2);
-    }
-    
-    if (stack) {
-      return `${timestamp} [${level.toUpperCase()}]: ${message}\n${stack}${metaStr}`;
-    }
-    
-    return `${timestamp} [${level.toUpperCase()}]: ${message}${metaStr}`;
-  })
-);
-
-// Define transports
-const transports = [];
-
-// Console transport
-if (process.env.NODE_ENV !== 'production') {
-  transports.push(
-    new winston.transports.Console({
-      format: format,
-      level: process.env.LOG_LEVEL || 'debug'
-    })
-  );
-}
-
-// File transports
-if (process.env.NODE_ENV !== 'test') {
-  // Ensure logs directory exists
-  const logsDir = path.join(__dirname, '../../logs');
-  
-  // Combined log file
-  transports.push(
-    new winston.transports.File({
-      filename: path.join(logsDir, 'combined.log'),
-      format: fileFormat,
-      level: 'info',
-      maxsize: 10 * 1024 * 1024, // 10MB
-      maxFiles: 5
-    })
-  );
-
-  // Error log file
-  transports.push(
-    new winston.transports.File({
-      filename: path.join(logsDir, 'error.log'),
-      format: fileFormat,
-      level: 'error',
-      maxsize: 5 * 1024 * 1024, // 5MB
-      maxFiles: 5
-    })
-  );
-
-  // HTTP log file (for morgan integration)
-  transports.push(
-    new winston.transports.File({
-      filename: path.join(logsDir, 'http.log'),
-      format: fileFormat,
-      level: 'http',
-      maxsize: 10 * 1024 * 1024, // 10MB
-      maxFiles: 3
-    })
-  );
-}
+// Decide transports
+const transports = [
+  new winston.transports.Console({
+    format: process.env.NODE_ENV === 'production' ? cloudRunFormat : devFormat,
+    level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  }),
+];
 
 // Create the logger
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   levels,
-  format: fileFormat,
   transports,
   exitOnError: false,
 });
@@ -131,11 +56,11 @@ logger.stream = {
   },
 };
 
-// Custom logging methods
+// Custom logging helpers
 logger.request = (req, res, duration) => {
   const { method, url, ip, headers } = req;
   const { statusCode } = res;
-  
+
   logger.http('HTTP Request', {
     method,
     url,

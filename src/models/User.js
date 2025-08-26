@@ -61,12 +61,12 @@ const userSchema = new mongoose.Schema({
   subscription: {
     plan: {
       type: String,
-      enum: ['free', 'basic', 'premium', 'enterprise'],
+      enum: ['free', 'basic', 'professional', 'enterprise'],
       default: 'free'
     },
     status: {
       type: String,
-      enum: ['active', 'inactive', 'cancelled', 'suspended'],
+      enum: ['active', 'inactive', 'cancelled', 'suspended', 'past_due', 'cancelling'],
       default: 'active'
     },
     startDate: {
@@ -75,6 +75,15 @@ const userSchema = new mongoose.Schema({
     },
     endDate: {
       type: Date
+    },
+    nextBillingDate: {
+      type: Date
+    },
+    lastPaymentDate: {
+      type: Date
+    },
+    stripeSubscriptionId: {
+      type: String
     },
     features: {
       maxTenderViews: {
@@ -92,8 +101,32 @@ const userSchema = new mongoose.Schema({
       emailAlerts: {
         type: Boolean,
         default: false
+      },
+      apiAccess: {
+        type: Boolean,
+        default: false
+      },
+      prioritySupport: {
+        type: Boolean,
+        default: false
+      },
+      customReports: {
+        type: Boolean,
+        default: false
+      },
+      archiveAccess: {
+        type: Number,
+        default: 0 // days
+      },
+      alertFrequency: {
+        type: String,
+        enum: ['none', 'weekly', 'daily', 'realtime'],
+        default: 'none'
       }
     }
+  },
+  stripeCustomerId: {
+    type: String
   },
   usage: {
     tenderViewsThisMonth: {

@@ -24,7 +24,8 @@ COPY --chown=nodeuser:nodejs . .
 # Remove development files and secrets
 RUN rm -rf tests/ coverage/ *.test.js migrate-to-atlas.js simple-migration.js \
     working-migration.js verify-migration.js test-atlas-connection.js \
-    debug-connection.js ATLAS_SETUP_GUIDE.md .env
+    debug-connection.js ATLAS_SETUP_GUIDE.md .env .env.stripe.example \
+    STRIPE_INTEGRATION.md GCP_DEPLOYMENT_GUIDE.md
 
 # Switch to non-root user
 USER nodeuser
