@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.js';
 import tenderRoutes from './routes/tenders.js';
 import subscriptionRoutes from './routes/subscriptions.js';
 import fileRoutes from './routes/files.js';
+import screenshotRoutes from './routes/screenshots.js';
 
 // Load environment variables
 dotenv.config();
@@ -183,6 +184,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tenders', tenderRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/screenshots', screenshotRoutes);
 
 // Serve static files (uploaded files)
 app.use('/uploads', express.static('uploads'));
