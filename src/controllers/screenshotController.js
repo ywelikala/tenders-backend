@@ -1,6 +1,5 @@
 import Screenshot from '../models/Screenshot.js';
 import logger from '../utils/logger.js';
-import { AppError } from '../utils/errors.js';
 
 /**
  * Save a screenshot to the database
@@ -29,13 +28,17 @@ export const saveScreenshot = async (req, res, next) => {
         hasImageData: !!imageData,
         source
       });
-      return next(new AppError('Missing required fields: filename, originalName, contentType, imageData', 400));
+      const error = new Error('Missing required fields: filename, originalName, contentType, imageData');
+      error.status = 400;
+      return next(error);
     }
 
     // Validate content type
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!allowedTypes.includes(contentType)) {
-      return next(new AppError(`Invalid content type. Allowed types: ${allowedTypes.join(', ')}`, 400));
+      const error = new Error(`Invalid content type. Allowed types: ${allowedTypes.join(', ')}`);
+      error.status = 400;
+      return next(error);
     }
 
     // Convert base64 to buffer
@@ -44,9 +47,11 @@ export const saveScreenshot = async (req, res, next) => {
       // Remove data URL prefix if present (data:image/png;base64,...)
       const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
       imageBuffer = Buffer.from(base64Data, 'base64');
-    } catch (error) {
-      logger.error('Failed to decode base64 image data', { error: error.message });
-      return next(new AppError('Invalid base64 image data', 400));
+    } catch (decodeError) {
+      logger.error('Failed to decode base64 image data', { error: decodeError.message });
+      const error = new Error('Invalid base64 image data');
+      error.status = 400;
+      return next(error);
     }
 
     // Create screenshot document
@@ -186,7 +191,9 @@ export const getScreenshot = async (req, res, next) => {
     const screenshot = await Screenshot.findById(id).select(selectFields);
 
     if (!screenshot) {
-      return next(new AppError('Screenshot not found', 404));
+      const error = new Error('Screenshot not found');
+      error.status = 404;
+      return next(error);
     }
 
     // Increment view count
@@ -227,7 +234,9 @@ export const getScreenshotImage = async (req, res, next) => {
     const screenshot = await Screenshot.findById(id).select('imageData contentType filename');
 
     if (!screenshot) {
-      return next(new AppError('Screenshot not found', 404));
+      const error = new Error('Screenshot not found');
+      error.status = 404;
+      return next(error);
     }
 
     // Set appropriate headers
@@ -267,7 +276,9 @@ export const deleteScreenshot = async (req, res, next) => {
     const screenshot = await Screenshot.findById(id);
 
     if (!screenshot) {
-      return next(new AppError('Screenshot not found', 404));
+      const error = new Error('Screenshot not found');
+      error.status = 404;
+      return next(error);
     }
 
     await Screenshot.findByIdAndDelete(id);
