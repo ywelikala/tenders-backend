@@ -5,20 +5,51 @@ import logger from '../utils/logger.js';
 
 const generateToken = (id) => {
   try {
+    // Validate and sanitize JWT_EXPIRES_IN
+    const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    
+    // Handle numeric values (assume days if just a number)
+    let validExpiresIn;
+    if (jwtExpiresIn && jwtExpiresIn.trim() !== '' && jwtExpiresIn !== '0') {
+      const trimmed = jwtExpiresIn.trim();
+      // If it's just a number (like "7"), assume it means days
+      if (/^\d+$/.test(trimmed)) {
+        validExpiresIn = `${trimmed}d`;
+      } else {
+        validExpiresIn = trimmed;
+      }
+    } else {
+      validExpiresIn = '7d';
+    }
+    
     logger.debug('JWT generation details', {
       userId: id,
       hasJwtSecret: !!process.env.JWT_SECRET,
-      jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d'
+      rawJwtExpiresIn: process.env.JWT_EXPIRES_IN,
+      validExpiresIn: validExpiresIn
     });
     
     const token = jwt.sign({ id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+      expiresIn: validExpiresIn
     });
+    
+    // Decode token to verify expiration time
+    const decoded = jwt.decode(token);
+    const now = Math.floor(Date.now() / 1000);
+    const expiry = decoded.exp;
+    const duration = expiry - now;
     
     logger.debug('JWT token generated successfully', { 
       userId: id,
-      tokenLength: token ? token.length : 0 
+      tokenLength: token ? token.length : 0,
+      expiresAt: new Date(expiry * 1000).toISOString(),
+      durationSeconds: duration,
+      isValidDuration: duration > 60 // Should be at least 1 minute
     });
+    
+    if (duration <= 0) {
+      throw new Error(`JWT token has invalid expiration: expires in ${duration} seconds`);
+    }
     
     return token;
   } catch (error) {

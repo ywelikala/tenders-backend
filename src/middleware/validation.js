@@ -44,7 +44,7 @@ export const registerSchema = Joi.object({
     'any.required': 'Last name is required'
   }),
   company: Joi.string().trim().max(100).optional(),
-  phone: Joi.string().pattern(/^\+?[\d\s\-\(\)]{10,}$/).optional().messages({
+  phone: Joi.string().allow('').pattern(/^\+?[\d\s\-\(\)]{10,}$/).optional().messages({
     'string.pattern.base': 'Please provide a valid phone number'
   }),
   role: Joi.string().valid('buyer', 'supplier').default('supplier')
@@ -119,7 +119,7 @@ export const createTenderSchema = Joi.object({
     'any.only': 'Please select a valid category',
     'any.required': 'Category is required'
   }),
-  subcategory: Joi.string().trim().optional(),
+  subcategory: Joi.string().trim().allow('').optional(),
   organization: Joi.object({
     name: Joi.string().trim().required().messages({
       'any.required': 'Organization name is required'
@@ -129,9 +129,9 @@ export const createTenderSchema = Joi.object({
       'any.required': 'Organization type is required'
     }),
     contactPerson: Joi.object({
-      name: Joi.string().trim().optional(),
-      email: Joi.string().email().optional(),
-      phone: Joi.string().optional()
+      name: Joi.string().trim().allow('').optional(),
+      email: Joi.string().email().allow('').optional(),
+      phone: Joi.string().allow('').optional()
     }).optional()
   }).required(),
   location: Joi.object({
@@ -152,7 +152,7 @@ export const createTenderSchema = Joi.object({
     district: Joi.string().required().messages({
       'any.required': 'District is required'
     }),
-    city: Joi.string().optional()
+    city: Joi.string().allow('').optional()
   }).required(),
   dates: Joi.object({
     published: Joi.date().default(() => new Date()),
@@ -182,7 +182,7 @@ export const createTenderSchema = Joi.object({
     documentRequired: Joi.array().items(Joi.string()).optional(),
     experience: Joi.object({
       years: Joi.number().min(0).optional(),
-      description: Joi.string().optional()
+      description: Joi.string().allow('').optional()
     }).optional(),
     turnover: Joi.object({
       minimum: Joi.number().min(0).optional(),
@@ -192,7 +192,7 @@ export const createTenderSchema = Joi.object({
   priority: Joi.string().valid('low', 'medium', 'high', 'urgent').default('medium'),
   visibility: Joi.string().valid('public', 'registered', 'premium').default('public'),
   tags: Joi.array().items(Joi.string()).optional(),
-  fullTextMarkdown: Joi.string().trim().max(10000).optional().messages({
+  fullTextMarkdown: Joi.string().trim().allow('').max(10000).optional().messages({
     'string.max': 'Full text markdown cannot exceed 10000 characters'
   })
 });
@@ -203,10 +203,10 @@ export const updateTenderSchema = createTenderSchema.keys({
 
 // User profile validation schemas
 export const updateProfileSchema = Joi.object({
-  firstName: Joi.string().trim().max(50).optional(),
-  lastName: Joi.string().trim().max(50).optional(),
-  company: Joi.string().trim().max(100).optional(),
-  phone: Joi.string().pattern(/^\+?[\d\s\-\(\)]{10,}$/).optional().messages({
+  firstName: Joi.string().trim().allow('').max(50).optional(),
+  lastName: Joi.string().trim().allow('').max(50).optional(),
+  company: Joi.string().trim().allow('').max(100).optional(),
+  phone: Joi.string().allow('').pattern(/^\+?[\d\s\-\(\)]{10,}$/).optional().messages({
     'string.pattern.base': 'Please provide a valid phone number'
   }),
   preferences: Joi.object({
