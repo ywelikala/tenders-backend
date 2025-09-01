@@ -1,4 +1,5 @@
 import Tender from '../models/Tender.js';
+import User from '../models/User.js';
 import { UserSubscription } from '../models/Subscription.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -421,6 +422,7 @@ export const getTenderStats = async (req, res) => {
       liveTenders,
       todayTenders,
       closedTenders,
+      supplierCount,
       categoryStats
     ] = await Promise.all([
       Tender.countDocuments({ isActive: true }),
@@ -441,6 +443,10 @@ export const getTenderStats = async (req, res) => {
         status: 'closed', 
         isActive: true 
       }),
+      User.countDocuments({ 
+        role: 'supplier', 
+        isActive: true 
+      }),
       Tender.aggregate([
         { $match: { isActive: true } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
@@ -456,6 +462,7 @@ export const getTenderStats = async (req, res) => {
         liveTenders,
         todayTenders,
         closedTenders,
+        supplierCount,
         categoryStats
       }
     });
