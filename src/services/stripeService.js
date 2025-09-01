@@ -47,13 +47,33 @@ class StripeService {
         });
       }
 
+      // Determine price to use - prefer explicit price ID, fallback to lookup key
+      let priceReference;
+      if (plan.stripePriceId) {
+        priceReference = { price: plan.stripePriceId };
+      } else if (plan.lookupKey) {
+        // Use lookup key to find price
+        const prices = await stripe.prices.list({
+          lookup_keys: [plan.lookupKey],
+          expand: ['data.product'],
+        });
+        
+        if (prices.data.length === 0) {
+          throw new Error(`No price found with lookup key: ${plan.lookupKey}`);
+        }
+        
+        priceReference = { price: prices.data[0].id };
+      } else {
+        throw new Error(`No price ID or lookup key configured for plan: ${planId}`);
+      }
+
       // Create checkout session
       const session = await stripe.checkout.sessions.create({
         customer: stripeCustomerId,
         payment_method_types: ['card'],
         line_items: [
           {
-            price: plan.stripePriceId,
+            ...priceReference,
             quantity: 1,
           },
         ],
