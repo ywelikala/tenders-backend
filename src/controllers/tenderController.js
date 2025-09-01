@@ -469,7 +469,7 @@ export const getTenderStats = async (req, res) => {
 };
 
 // @desc    Get user's tenders
-// @route   GET /api/tenders/my-tenders
+// @route   GET /api/tenders/user/my-tenders
 // @access  Private
 export const getMyTenders = async (req, res) => {
   try {
