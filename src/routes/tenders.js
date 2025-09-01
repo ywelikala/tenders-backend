@@ -20,11 +20,13 @@ const router = express.Router();
 // Public routes (with optional authentication)
 router.get('/', optionalAuth, getTenders);
 router.get('/stats', getTenderStats);
-router.get('/:id', optionalAuth, getTender);
 
 // Protected routes
 router.use(authenticate);
 router.get('/user/my-tenders', getMyTenders);
+
+// Public routes (with optional authentication) - parametric routes last
+router.get('/:id', optionalAuth, getTender);
 router.post('/', validate(createTenderSchema), createTender);
 router.put('/:id', validate(updateTenderSchema), updateTender);
 router.delete('/:id', deleteTender);
