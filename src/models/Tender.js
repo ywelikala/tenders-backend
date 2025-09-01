@@ -194,6 +194,15 @@ const tenderSchema = new mongoose.Schema({
     metaDescription: String,
     keywords: [String]
   },
+  sourceUrl: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Source URL cannot exceed 500 characters']
+  },
+  sourcePage: {
+    type: Number,
+    min: [1, 'Source page must be at least 1']
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
