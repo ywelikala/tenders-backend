@@ -11,19 +11,28 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: function() {
+      // Password is not required for social logins
+      return !this.googleId && !this.facebookId;
+    },
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
   firstName: {
     type: String,
-    required: [true, 'First name is required'],
+    required: function() {
+      // Name fields not required for social logins if 'name' field is provided
+      return !this.googleId && !this.facebookId && !this.name;
+    },
     trim: true,
     maxlength: [50, 'First name cannot exceed 50 characters']
   },
   lastName: {
     type: String,
-    required: [true, 'Last name is required'],
+    required: function() {
+      // Name fields not required for social logins if 'name' field is provided
+      return !this.googleId && !this.facebookId && !this.name;
+    },
     trim: true,
     maxlength: [50, 'Last name cannot exceed 50 characters']
   },
@@ -169,6 +178,22 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  // Social login fields
+  googleId: {
+    type: String,
+    sparse: true // Allow multiple null values but ensure uniqueness for non-null values
+  },
+  facebookId: {
+    type: String,
+    sparse: true // Allow multiple null values but ensure uniqueness for non-null values
+  },
+  profilePicture: {
+    type: String
+  },
+  name: {
+    type: String, // For social logins that provide full name
+    trim: true
   }
 }, {
   timestamps: true,

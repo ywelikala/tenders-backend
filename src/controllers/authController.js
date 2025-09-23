@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import axios from 'axios';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import logger from '../utils/logger.js';
 
@@ -509,6 +511,174 @@ export const verifyEmail = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error during email verification'
+    });
+  }
+};
+
+// Google OAuth client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// @desc    Google OAuth login
+// @route   POST /api/auth/google
+// @access  Public
+export const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google credential is required'
+      });
+    }
+
+    // Verify Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const googleId = payload.sub;
+    const email = payload.email;
+    const name = payload.name;
+    const picture = payload.picture;
+
+    logger.info('Google login attempt', { email, googleId });
+
+    // Check if user exists with this Google ID
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Check if user exists with this email
+      user = await User.findOne({ email });
+
+      if (user) {
+        // Link Google account to existing user
+        user.googleId = googleId;
+        if (picture) user.profilePicture = picture;
+        await user.save();
+        logger.info('Linked Google account to existing user', { userId: user._id, email });
+      } else {
+        // Create new user
+        user = await User.create({
+          googleId,
+          email,
+          name,
+          profilePicture: picture,
+          isEmailVerified: true, // Google accounts are pre-verified
+          role: 'user'
+        });
+        logger.info('Created new user from Google login', { userId: user._id, email });
+      }
+    }
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Google login successful',
+      data: {
+        token,
+        user
+      }
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during Google login'
+    });
+  }
+};
+
+// @desc    Facebook OAuth login
+// @route   POST /api/auth/facebook
+// @access  Public
+export const facebookLogin = async (req, res) => {
+  try {
+    const { accessToken, userID } = req.body;
+
+    if (!accessToken || !userID) {
+      return res.status(400).json({
+        success: false,
+        message: 'Facebook access token and user ID are required'
+      });
+    }
+
+    // Verify Facebook token and get user info
+    const response = await axios.get(
+      `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${accessToken}`
+    );
+
+    const facebookData = response.data;
+
+    if (facebookData.id !== userID) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Facebook token'
+      });
+    }
+
+    const email = facebookData.email;
+    const name = facebookData.name;
+    const picture = facebookData.picture?.data?.url;
+    const facebookId = facebookData.id;
+
+    logger.info('Facebook login attempt', { email, facebookId });
+
+    // Check if user exists with this Facebook ID
+    let user = await User.findOne({ facebookId });
+
+    if (!user) {
+      // Check if user exists with this email
+      if (email) {
+        user = await User.findOne({ email });
+      }
+
+      if (user) {
+        // Link Facebook account to existing user
+        user.facebookId = facebookId;
+        if (picture) user.profilePicture = picture;
+        await user.save();
+        logger.info('Linked Facebook account to existing user', { userId: user._id, email });
+      } else {
+        // Create new user
+        user = await User.create({
+          facebookId,
+          email: email || `facebook_${facebookId}@example.com`, // Fallback email
+          name,
+          profilePicture: picture,
+          isEmailVerified: !!email, // Only verify if email provided
+          role: 'user'
+        });
+        logger.info('Created new user from Facebook login', { userId: user._id, email });
+      }
+    }
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Facebook login successful',
+      data: {
+        token,
+        user
+      }
+    });
+  } catch (error) {
+    console.error('Facebook login error:', error);
+
+    if (error.response?.status === 400) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Facebook access token'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error during Facebook login'
     });
   }
 };
