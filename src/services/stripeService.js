@@ -78,8 +78,8 @@ class StripeService {
           },
         ],
         mode: 'subscription',
-        success_url: `${process.env.FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.FRONTEND_URL}/subscription/cancel`,
+        success_url: `https://lankatender.com/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `https://lankatender.com/subscription/cancel`,
         metadata: {
           userId: user._id.toString(),
           planId: planId

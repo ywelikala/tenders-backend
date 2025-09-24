@@ -14,7 +14,7 @@ if (process.env.STRIPE_SECRET_KEY) {
 // Pricing plan configurations
 export const STRIPE_PLANS = {
   basic: {
-    stripePriceId: process.env.STRIPE_BASIC_PRICE_ID || 'price_1S2UhGHbXCEL5vdNZoo362PY',
+    stripePriceId: 'price_1S2UhGHbXCEL5vdNZoo362PY', // Hardcoded for now - TODO: Update production env vars
     lookupKey: process.env.STRIPE_BASIC_LOOKUP_KEY || 'Lankatender_Basic_Plan-3d98604',
     name: 'Basic Plan',
     price: 2000,
@@ -32,7 +32,7 @@ export const STRIPE_PLANS = {
     }
   },
   professional: {
-    stripePriceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID || 'price_1S2VGmHbXCEL5vdN2dqGOuPN',
+    stripePriceId: 'price_1S2VGmHbXCEL5vdN2dqGOuPN', // Hardcoded for now - TODO: Update production env vars
     lookupKey: process.env.STRIPE_PROFESSIONAL_LOOKUP_KEY || 'Lankatender_Professional_Plan',
     name: 'Professional Plan',
     price: 5000,
@@ -50,7 +50,7 @@ export const STRIPE_PLANS = {
     }
   },
   enterprise: {
-    stripePriceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || 'price_1S2VHaHbXCEL5vdNQKGWp7JH',
+    stripePriceId: 'price_1S2VHaHbXCEL5vdNQKGWp7JH', // Hardcoded for now - TODO: Update production env vars
     lookupKey: process.env.STRIPE_ENTERPRISE_LOOKUP_KEY || 'Lankatender_Enterprise_Plan',
     name: 'Enterprise Plan',
     price: 10000,

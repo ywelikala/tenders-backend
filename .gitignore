@@ -126,3 +126,6 @@ ecosystem.config.js
 
 # Docker files (if not using)
 # docker-compose.override.yml
+
+# Gmail OAuth setup scripts with actual credentials (use templates)
+scripts/gmail-oauth-setup.js

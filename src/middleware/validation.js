@@ -219,3 +219,107 @@ export const updateProfileSchema = Joi.object({
     }).optional()
   }).optional()
 });
+
+// Alert configuration validation schemas
+export const alertConfigurationSchema = Joi.object({
+  name: Joi.string().trim().max(100).required().messages({
+    'string.max': 'Alert name cannot exceed 100 characters',
+    'any.required': 'Alert name is required'
+  }),
+  description: Joi.string().trim().max(500).allow('').optional().messages({
+    'string.max': 'Description cannot exceed 500 characters'
+  }),
+  isActive: Joi.boolean().default(true),
+  keywords: Joi.array().items(
+    Joi.object({
+      term: Joi.string().trim().max(50).required().messages({
+        'string.max': 'Keyword cannot exceed 50 characters',
+        'any.required': 'Keyword term is required'
+      }),
+      matchType: Joi.string().valid('exact', 'contains', 'starts_with', 'ends_with').default('contains')
+    })
+  ).min(1).max(20).required().messages({
+    'array.min': 'At least one keyword is required',
+    'array.max': 'Maximum 20 keywords allowed',
+    'any.required': 'Keywords are required'
+  }),
+  categories: Joi.array().items(
+    Joi.string().valid(
+      'Construction',
+      'Computers & Laptops',
+      'Computer & IT',
+      'Upkeep/Repair',
+      'Medical Equipment',
+      'Office Supplies',
+      'Vehicles',
+      'Furniture',
+      'Consultancy Services',
+      'Engineering Services',
+      'Security Services',
+      'Catering Services',
+      'Cleaning Services',
+      'Other'
+    )
+  ).max(10).optional().messages({
+    'array.max': 'Maximum 10 categories allowed'
+  }),
+  locations: Joi.object({
+    provinces: Joi.array().items(
+      Joi.string().valid(
+        'Western Province',
+        'Central Province',
+        'Southern Province',
+        'Northern Province',
+        'Eastern Province',
+        'North Western Province',
+        'North Central Province',
+        'Uva Province',
+        'Sabaragamuwa Province'
+      )
+    ).max(9).optional(),
+    districts: Joi.array().items(Joi.string()).max(25).optional(),
+    cities: Joi.array().items(Joi.string()).max(50).optional()
+  }).optional(),
+  organizationTypes: Joi.array().items(
+    Joi.string().valid('government', 'private', 'semi-government', 'ngo')
+  ).max(4).optional(),
+  estimatedValue: Joi.object({
+    min: Joi.number().min(0).optional(),
+    max: Joi.number().min(0).optional(),
+    currency: Joi.string().valid('LKR', 'USD', 'EUR').default('LKR')
+  }).optional().custom((value, helpers) => {
+    if (value.min && value.max && value.min > value.max) {
+      return helpers.message('Minimum value cannot be greater than maximum value');
+    }
+    return value;
+  }),
+  emailSettings: Joi.object({
+    enabled: Joi.boolean().default(true),
+    frequency: Joi.string().valid('immediate', 'daily', 'weekly').default('immediate'),
+    customEmail: Joi.string().email().allow('').optional().messages({
+      'string.email': 'Please provide a valid email address'
+    }),
+    dailySummaryTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).default('09:00').messages({
+      'string.pattern.base': 'Please provide valid time in HH:MM format (24-hour)'
+    })
+  }).optional(),
+  advancedFilters: Joi.object({
+    excludeKeywords: Joi.array().items(Joi.string().trim().max(50)).max(10).optional(),
+    minDaysUntilClosing: Joi.number().min(0).max(365).optional(),
+    maxDaysUntilClosing: Joi.number().min(0).max(365).optional(),
+    includedStatuses: Joi.array().items(
+      Joi.string().valid('draft', 'published', 'closed', 'awarded', 'cancelled')
+    ).optional(),
+    includedPriorities: Joi.array().items(
+      Joi.string().valid('low', 'medium', 'high', 'urgent')
+    ).optional()
+  }).optional().custom((value, helpers) => {
+    if (value.minDaysUntilClosing && value.maxDaysUntilClosing &&
+        value.minDaysUntilClosing > value.maxDaysUntilClosing) {
+      return helpers.message('Minimum days until closing cannot be greater than maximum days');
+    }
+    return value;
+  })
+});
+
+export const validateAlertConfiguration = validate(alertConfigurationSchema);

@@ -14,6 +14,8 @@ import tenderRoutes from './routes/tenders.js';
 import subscriptionRoutes from './routes/subscriptions.js';
 import fileRoutes from './routes/files.js';
 import screenshotRoutes from './routes/screenshots.js';
+import alertRoutes from './routes/alerts.js';
+import schedulerService from './services/schedulerService.js';
 
 // Load environment variables
 dotenv.config();
@@ -46,6 +48,14 @@ logger.debug('Environment variables check', {
 // Connect to database
 if (process.env.NODE_ENV !== 'test') {
   connectDB();
+
+  // Initialize scheduler service for alert processing
+  try {
+    schedulerService.initialize();
+    logger.info('Alert scheduler initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize alert scheduler:', error);
+  }
 }
 
 const app = express();
@@ -185,6 +195,7 @@ app.use('/api/tenders', tenderRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/screenshots', screenshotRoutes);
+app.use('/api/alerts', alertRoutes);
 
 // Serve static files (uploaded files)
 app.use('/uploads', express.static('uploads'));

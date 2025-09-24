@@ -1,6 +1,8 @@
 import Tender from '../models/Tender.js';
 import User from '../models/User.js';
 import { UserSubscription } from '../models/Subscription.js';
+import alertProcessingService from '../services/alertProcessingService.js';
+import logger from '../utils/logger.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -233,6 +235,25 @@ export const createTender = async (req, res) => {
     // Populate creator information
     await tender.populate('createdBy', 'firstName lastName company');
 
+    // Process alerts for the new tender (non-blocking)
+    if (tender.status === 'published') {
+      logger.info('Processing alerts for new published tender', {
+        tenderId: tender._id,
+        tenderTitle: tender.title
+      });
+
+      // Process alerts asynchronously without blocking the response
+      alertProcessingService.queueTenderForProcessing(tender, {
+        isNewTender: true,
+        isUpdate: false
+      }).catch(error => {
+        logger.error('Error processing alerts for new tender', {
+          tenderId: tender._id,
+          error: error.message
+        });
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: 'Tender created successfully',
@@ -298,6 +319,9 @@ export const updateTender = async (req, res) => {
       updatedBy: req.user.id
     };
 
+    // Store previous status to detect changes
+    const previousStatus = tender.status;
+
     tender = await Tender.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -307,6 +331,35 @@ export const updateTender = async (req, res) => {
       }
     ).populate('createdBy', 'firstName lastName company')
      .populate('updatedBy', 'firstName lastName');
+
+    // Process alerts if tender was just published or significantly updated
+    const shouldProcessAlerts = (
+      (previousStatus !== 'published' && tender.status === 'published') || // Just published
+      (tender.status === 'published' && previousStatus === 'published') // Updated while published
+    );
+
+    if (shouldProcessAlerts) {
+      const isNewlyPublished = previousStatus !== 'published' && tender.status === 'published';
+
+      logger.info('Processing alerts for updated tender', {
+        tenderId: tender._id,
+        tenderTitle: tender.title,
+        previousStatus,
+        newStatus: tender.status,
+        isNewlyPublished
+      });
+
+      // Process alerts asynchronously without blocking the response
+      alertProcessingService.queueTenderForProcessing(tender, {
+        isNewTender: isNewlyPublished,
+        isUpdate: !isNewlyPublished
+      }).catch(error => {
+        logger.error('Error processing alerts for updated tender', {
+          tenderId: tender._id,
+          error: error.message
+        });
+      });
+    }
 
     res.status(200).json({
       success: true,
